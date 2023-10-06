@@ -1,0 +1,30 @@
+{
+  "name": "cpsc501_assignment1",
+  "version": "1.0.0",
+  "description": "UofC CPSC 501 Assignment #1 by Derek Urban, 30089085",
+  "main": "JsonAssembler.ts",
+  "dependencies": {
+    "typescript": "^5.2.2"
+  },
+  "scripts": {
+    "test": "npx vitest",
+    "build": "tsc",
+    "publish": "npm run build && npm publish --access public",
+    "publish patch": "npm version patch && npm run publish",
+    "publish minor": "npm version minor && npm run publish",
+    "publish major": "npm version major && npm run publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/derekurban2001/CPSC501Assignment1.git"
+  },
+  "author": "Derek Urban",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/derekurban2001/CPSC501Assignment1/issues"
+  },
+  "homepage": "https://github.com/derekurban2001/CPSC501Assignment1#readme",
+  "devDependencies": {
+    "vitest": "^0.34.6"
+  }
+}
