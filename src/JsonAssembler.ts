@@ -1,50 +1,49 @@
-const WHITE_SPACES = [" ", "\n", "\t", "\r"];
-const CLOSURES = [",", "]", "}"];
+const IGNORED_CHARACTERS = [" ", "\n", "\t", "\r"];
+const TERMINATION_CHARACTERS = [",", "]", "}"];
 
 export default class JsonAssembler {
-  private string_manager: JsonStringManager;
-  constructor(json_string: string) {
-    this.string_manager = new JsonStringManager(json_string);
+  private text_manager: JsonTextManager;
+  constructor(input_json_text: string) {
+    this.text_manager = new JsonTextManager(input_json_text);
   }
 
-  public assembleValue = (): any => {
-    const char = this.string_manager.nextChar({ skip: WHITE_SPACES });
+  public buildValue = (): any => {
+    const char = this.text_manager.nextChar({ skip: IGNORED_CHARACTERS });
     switch (char) {
       case "}":
         return;
       case "]":
         return;
       case '"':
-        return this.assembleString();
+        return this.buildString();
       case "{":
-        const obj = this.assembleObject();
-        return obj;
+        return this.buildObject();
       case "[":
-        return this.assembleArray();
+        return this.buildArray();
       default:
-        if (char) return this.assemblePrimitive(char);
+        if (char) return this.buildPrimitive(char);
     }
   };
 
-  public assembleString = (): string => {
-    let result = "";
+  public buildString = (): string => {
+    let output_string = "";
 
-    let char = this.string_manager.nextChar();
+    let char = this.text_manager.nextChar();
     let prev_char = null;
     while (char) {
       if (char === '"' && prev_char !== "\\") {
         break;
       } else {
-        result += char;
+        output_string += char;
       }
       prev_char = char;
-      char = this.string_manager.nextChar();
+      char = this.text_manager.nextChar();
     }
 
-    return this.replaceSpecialChars(result);
+    return this.modifySpecialCharacters(output_string);
   };
 
-  public replaceSpecialChars = (text: string) =>
+  public modifySpecialCharacters = (text: string) =>
     text
       .replace(/\\n/g, "\n")
       .replace(/\\b/g, "\b")
@@ -54,103 +53,101 @@ export default class JsonAssembler {
       .replace(/\\"/g, '"')
       .replace(/\\\\/g, "\\");
 
-  public assembleArray = (): any[] => {
-    const arr = [];
+  public buildArray = (): any[] => {
+    const output_array = [];
 
-    let char = this.string_manager.nextChar({ skip: WHITE_SPACES });
+    let char = this.text_manager.nextChar({ skip: IGNORED_CHARACTERS });
     while (char && char != "]") {
-      this.string_manager.returnChar(char);
-      const value = this.assembleValue();
-      arr.push(value);
+      this.text_manager.returnChar(char);
+      const value = this.buildValue();
+      output_array.push(value);
 
-      char = this.string_manager.nextChar({ skip: [",", ...WHITE_SPACES] });
+      char = this.text_manager.nextChar({
+        skip: [",", ...IGNORED_CHARACTERS],
+      });
     }
 
-    return arr;
+    return output_array;
   };
 
-  public assembleObject = (): {} => {
-    const obj: Record<string, any> = {};
-    let char = this.string_manager.nextChar({ skip: WHITE_SPACES });
+  public buildObject = (): {} => {
+    const output_obj: Record<string, any> = {};
+    let char = this.text_manager.nextChar({ skip: IGNORED_CHARACTERS });
 
     while (char && char != "}") {
       if (char == '"') {
-        const key = this.assembleString();
-        this.string_manager.nextChar({ until: [":"] });
-        const value = this.assembleValue();
-        obj[key] = value;
+        const key = this.buildString();
+        this.text_manager.nextChar({ until: [":"] });
+        const value = this.buildValue();
+        output_obj[key] = value;
       }
-      char = this.string_manager.nextChar({ skip: WHITE_SPACES });
+      char = this.text_manager.nextChar({ skip: IGNORED_CHARACTERS });
     }
 
-    return obj;
+    return output_obj;
   };
 
-  public assemblePrimitive = (char: string | null): any => {
-    let result = char;
-    char = this.string_manager.nextChar();
+  public buildPrimitive = (char: string | null): any => {
+    let output_primitive = char;
+    char = this.text_manager.nextChar();
     while (char) {
-      if (char && CLOSURES.includes(char)) {
-        this.string_manager.returnChar(char);
+      if (char && TERMINATION_CHARACTERS.includes(char)) {
+        this.text_manager.returnChar(char);
         break;
       }
 
-      result += char;
-      char = this.string_manager.nextChar();
+      output_primitive += char;
+      char = this.text_manager.nextChar();
     }
 
-    if (!result) return result;
+    if (!output_primitive) return output_primitive;
 
-    const num = parseFloat(result);
+    const num = parseFloat(output_primitive);
     if (!isNaN(num)) {
       return num;
     }
 
-    if (result === "true") return true;
-    if (result === "false") return false;
-    if (result === "null") return null;
-    if (result === "undefined") return undefined;
+    if (output_primitive === "true") return true;
+    if (output_primitive === "false") return false;
+    if (output_primitive === "null") return null;
+    if (output_primitive === "undefined") return undefined;
 
-    return result;
+    return output_primitive;
   };
 
-  public assemble = () => this.assembleValue();
+  public assemble = () => this.buildValue();
 }
 
-class JsonStringManager {
-  private json_string: string;
-  constructor(json_string: string) {
-    this.json_string = json_string;
+class JsonTextManager {
+  private json_text: string;
+  constructor(input_json_text: string) {
+    this.json_text = input_json_text;
   }
 
   public nextChar = (options?: {
     until?: Array<string>;
     skip?: Array<string>;
   }) => {
-    if (this.json_string.length == 0) return null;
+    if (this.json_text.length == 0) return null;
 
     let index = 0;
-    let char: string | null = this.json_string.charAt(index++);
+    let char: string | null = this.json_text.charAt(index++);
     if (options?.until) {
       while (char && !options.until.includes(char)) {
         char =
-          index < this.json_string.length
-            ? this.json_string.charAt(index++)
-            : null;
+          index < this.json_text.length ? this.json_text.charAt(index++) : null;
       }
     } else if (options?.skip) {
       while (char && options.skip.includes(char))
         char =
-          index < this.json_string.length
-            ? this.json_string.charAt(index++)
-            : null;
+          index < this.json_text.length ? this.json_text.charAt(index++) : null;
     }
 
-    this.json_string = this.json_string.slice(index, this.json_string.length);
+    this.json_text = this.json_text.slice(index, this.json_text.length);
     return char;
   };
 
   public returnChar(char: string) {
-    this.json_string = char + this.json_string;
+    this.json_text = char + this.json_text;
   }
 }
