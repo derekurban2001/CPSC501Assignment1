@@ -1,5 +1,5 @@
 {
-  "include": ["src/**/*", "versions/v0/JsonAssembler.js", "versions/v0/JsonAssembler.ts"],
+  "include": ["src/**/*", "versions/v5/JsonAssembler.js", "versions/v5/JsonAssembler.ts", "tests/JsonAssembler.test.ts"],
   "exclude": ["node_modules"],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
