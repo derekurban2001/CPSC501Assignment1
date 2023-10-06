@@ -1,5 +1,5 @@
 import { describe, test } from "vitest";
-import JsonAssemble from "../src/JsonAssembler";
+import JsonAssembler from "../src/JsonAssembler";
 
 describe("Tests for JsonAssembler", () => {
   test("Nested Objects and Arrays Test", ({ expect }) => {
@@ -25,7 +25,8 @@ describe("Tests for JsonAssembler", () => {
       ],
     };
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -33,7 +34,8 @@ describe("Tests for JsonAssembler", () => {
   test("Array Of Primitive Types Test", ({ expect }) => {
     const test_json = [1, "string", false, null];
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -41,15 +43,17 @@ describe("Tests for JsonAssembler", () => {
   test("Empty Object Test", ({ expect }) => {
     const test_json = {};
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
 
   test("Empty Array Test", ({ expect }) => {
-    const test_json = [];
+    const test_json: any = [];
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -60,7 +64,8 @@ describe("Tests for JsonAssembler", () => {
       undef_key: undefined,
     };
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -72,7 +77,8 @@ describe("Tests for JsonAssembler", () => {
       obj_key3: {},
     };
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -82,7 +88,8 @@ describe("Tests for JsonAssembler", () => {
       arr_key: [[[]], [1, 2, [3, 4, [5]]], []],
     };
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -95,7 +102,8 @@ describe("Tests for JsonAssembler", () => {
       null_key: null,
     };
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -112,7 +120,8 @@ describe("Tests for JsonAssembler", () => {
       },
     ];
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -125,7 +134,8 @@ describe("Tests for JsonAssembler", () => {
       special_str_key4: "\"Double quotes\" and 'Single quotes'",
     };
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -133,7 +143,8 @@ describe("Tests for JsonAssembler", () => {
   test("Mixed Primitive Types In Array", ({ expect }) => {
     const test_json = ["String", 28, true, null];
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -149,7 +160,8 @@ describe("Tests for JsonAssembler", () => {
       },
     };
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -161,7 +173,8 @@ describe("Tests for JsonAssembler", () => {
       3: "Number Three",
     };
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -171,7 +184,8 @@ describe("Tests for JsonAssembler", () => {
       unicode_str_key: "Test\u00DCnicode",
     };
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
@@ -183,7 +197,8 @@ describe("Tests for JsonAssembler", () => {
       "key three": "value three",
     };
 
-    const final_obj = JsonAssemble(JSON.stringify(test_json));
+    const json_assembler = new JsonAssembler(JSON.stringify(test_json));
+    const final_obj = json_assembler.assemble();
 
     expect(final_obj).toEqual(test_json);
   });
