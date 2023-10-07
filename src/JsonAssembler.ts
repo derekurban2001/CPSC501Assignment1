@@ -1,247 +1,131 @@
-// Define ignored and termination characters
+export default function jsonAssemble(json_string: string) {
+  const nextChar = (options?: {
+    until?: Array<string>;
+    skip?: Array<string>;
+  }) => {
+    if (json_string.length == 0) return null;
 
-const IGNORED_CHARACTERS = [" ", "\n", "\t", "\r"];
+    let index = 0;
+    let char: string | null = json_string.charAt(index++);
+    if (options?.until) {
+      while (char && !options.until.includes(char)) {
+        char = index < json_string.length ? json_string.charAt(index++) : null;
+      }
+    } else if (options?.skip) {
+      while (char && options.skip.includes(char))
+        char = index < json_string.length ? json_string.charAt(index++) : null;
+    }
 
-const TERMINATION_CHARACTERS = [",", "]", "}"];
+    json_string = json_string.slice(index, json_string.length);
+    return char;
+  };
 
-// This class assembles the JSON
-
-export default class JsonAssembler {
-  // Declare JsonTextManager
-
-  private text_manager: JsonTextManager;
-
-  // Initialize JsonAssembler with input JSON text
-
-  constructor(input_json_text: string) {
-    this.text_manager = new JsonTextManager(input_json_text);
-  }
-
-  // Method to build a value from JSON text
-
-  public buildValue = (): any => {
-    // Get the next character out of the ignored characters
-
-    const char = this.text_manager.nextChar({ skip: IGNORED_CHARACTERS });
-
-    // Analyze the character and build corresponding string, object, array or primitive
-
+  const assembleValue = (): any => {
+    const char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
     switch (char) {
-      case "}": // handle for '}' character
+      case "}":
         return;
-
-      case "]": // handle for ']' character
+      case "]":
         return;
-
-      case '"': // If character is string, build string
-        return this.buildString();
-
-      case "{": // If character is object, build object
-        return this.buildObject();
-
-      case "[": // If character is array, build array
-        return this.buildArray();
-
+      case '"':
+        return assembleString();
+      case "{":
+        const obj = assembleObject();
+        return obj;
+      case "[":
+        return assembleArray();
       default:
-        // If character is other type, build primitive
-
-        if (char) return this.buildPrimitive(char);
+        if (char) return assemblePrimitive(char);
     }
   };
 
-  // Method to build a string value
+  const assembleString = (): string => {
+    let result = "";
 
-  public buildString = (): string => {
-    let output_string = "";
-
-    // Get the next characters and append them to the output_string until find '"' character
-
-    let char = this.text_manager.nextChar();
-
+    let char = nextChar();
     let prev_char = null;
-
     while (char) {
       if (char === '"' && prev_char !== "\\") {
         break;
       } else {
-        output_string += char;
+        result += char;
       }
-
       prev_char = char;
-
-      char = this.text_manager.nextChar();
+      char = nextChar();
     }
 
-    return this.modifySpecialCharacters(output_string);
+    return replaceSpecialChars(result);
   };
 
-  // Method to replace special characters to their actual representation
-
-  public modifySpecialCharacters = (text: string) =>
+  const replaceSpecialChars = (text: string) =>
     text
-
       .replace(/\\n/g, "\n")
-
       .replace(/\\b/g, "\b")
-
       .replace(/\\r/g, "\r")
-
       .replace(/\\t/g, "\t")
-
       .replace(/\\f/g, "\f")
-
       .replace(/\\"/g, '"')
-
       .replace(/\\\\/g, "\\");
 
-  // Method to build an array value
+  const assembleArray = (): any[] => {
+    const arr = [];
 
-  public buildArray = (): any[] => {
-    const output_array = [];
-
-    // Parsing the array characters from JSON text and append them into output_array
-
-    let char = this.text_manager.nextChar({ skip: IGNORED_CHARACTERS });
-
+    let char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
     while (char && char != "]") {
-      this.text_manager.returnChar(char);
+      json_string = char + json_string;
+      const value = assembleValue();
+      arr.push(value);
 
-      const value = this.buildValue();
-
-      output_array.push(value);
-
-      char = this.text_manager.nextChar({
-        skip: [",", ...IGNORED_CHARACTERS],
-      });
+      char = nextChar({ skip: [",", ...[" ", "\n", "\t", "\r"]] });
     }
 
-    return output_array;
+    return arr;
   };
 
-  // Method to build an object value
-
-  public buildObject = (): {} => {
-    const output_obj: Record<string, any> = {};
-
-    // Parsing the object fields from JSON text and append them into the output object
-
-    let char = this.text_manager.nextChar({ skip: IGNORED_CHARACTERS });
+  const assembleObject = (): {} => {
+    const obj: Record<string, any> = {};
+    let char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
 
     while (char && char != "}") {
       if (char == '"') {
-        const key = this.buildString();
-
-        this.text_manager.nextChar({ until: [":"] });
-
-        const value = this.buildValue();
-
-        output_obj[key] = value;
+        const key = assembleString();
+        nextChar({ until: [":"] });
+        const value = assembleValue();
+        obj[key] = value;
       }
-
-      char = this.text_manager.nextChar({ skip: IGNORED_CHARACTERS });
+      char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
     }
 
-    return output_obj;
+    return obj;
   };
 
-  // Method to build a primitive value
-
-  public buildPrimitive = (char: string | null): any => {
-    let output_primitive = char;
-
-    // Parse the primitive from JSON text
-
-    char = this.text_manager.nextChar();
-
+  const assemblePrimitive = (char: string | null): any => {
+    let result = char;
+    char = nextChar();
     while (char) {
-      if (char && TERMINATION_CHARACTERS.includes(char)) {
-        this.text_manager.returnChar(char);
-
+      if (char && [",", "]", "}"].includes(char)) {
+        json_string = char + json_string;
         break;
       }
 
-      output_primitive += char;
-
-      char = this.text_manager.nextChar();
+      result += char;
+      char = nextChar();
     }
 
-    if (!output_primitive) return output_primitive;
+    if (!result) return result;
 
-    // Convert output_primitive to corresponding types (number, boolean, null, undefined)
-
-    const num = parseFloat(output_primitive);
-
+    const num = parseFloat(result);
     if (!isNaN(num)) {
       return num;
     }
 
-    if (output_primitive === "true") return true;
+    if (result === "true") return true;
+    if (result === "false") return false;
+    if (result === "null") return null;
+    if (result === "undefined") return undefined;
 
-    if (output_primitive === "false") return false;
-
-    if (output_primitive === "null") return null;
-
-    if (output_primitive === "undefined") return undefined;
-
-    return output_primitive;
+    return result;
   };
 
-  // Entry method to start building JSON from text
-
-  public assemble = () => this.buildValue();
-}
-
-// This class manages the JSON text
-
-class JsonTextManager {
-  private json_text: string;
-
-  // Initialize JsonTextManager with input JSON text
-
-  constructor(input_json_text: string) {
-    this.json_text = input_json_text;
-  }
-
-  // Method to get next character with some options like 'until' and 'skip'
-
-  public nextChar = (options?: {
-    until?: Array<string>;
-
-    skip?: Array<string>;
-  }) => {
-    // If text is empty, return null
-
-    if (this.json_text.length == 0) return null;
-
-    let index = 0;
-
-    let char: string | null = this.json_text.charAt(index++);
-
-    // Iterate until find character or end of text
-
-    if (options?.until) {
-      while (char && !options.until.includes(char)) {
-        char =
-          index < this.json_text.length ? this.json_text.charAt(index++) : null;
-      }
-    } else if (options?.skip) {
-      // Skip characters which are included in 'skip' option
-
-      while (char && options.skip.includes(char))
-        char =
-          index < this.json_text.length ? this.json_text.charAt(index++) : null;
-    }
-
-    // remove processed characters in json_text
-
-    this.json_text = this.json_text.slice(index, this.json_text.length);
-
-    return char;
-  };
-
-  // Method to return the character to json_text
-
-  public returnChar(char: string) {
-    this.json_text = char + this.json_text;
-  }
+  return assembleValue();
 }
