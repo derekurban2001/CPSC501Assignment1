@@ -1,3 +1,6 @@
+const WHITE_SPACES = [" ", "\n", "\t", "\r"];
+const CLOSURES = [",", "]", "}"];
+
 export default class JsonAssembler {
   private json_string: string;
   constructor(json_string: string) {
@@ -32,7 +35,7 @@ export default class JsonAssembler {
   };
 
   public assembleValue = (): any => {
-    const char = this.nextChar({ skip: [" ", "\n", "\t", "\r"] });
+    const char = this.nextChar({ skip: WHITE_SPACES });
     switch (char) {
       case "}":
         return;
@@ -54,7 +57,7 @@ export default class JsonAssembler {
     let result = "";
 
     let char = this.nextChar();
-    let prev_char = null;
+    let prev_char: string | null = null;
     while (char) {
       if (char === '"' && prev_char !== "\\") {
         break;
@@ -79,15 +82,15 @@ export default class JsonAssembler {
       .replace(/\\\\/g, "\\");
 
   public assembleArray = (): any[] => {
-    const arr = [];
+    const arr: Array<any> = [];
 
-    let char = this.nextChar({ skip: [" ", "\n", "\t", "\r"] });
+    let char = this.nextChar({ skip: WHITE_SPACES });
     while (char && char != "]") {
       this.json_string = char + this.json_string;
       const value = this.assembleValue();
       arr.push(value);
 
-      char = this.nextChar({ skip: [",", ...[" ", "\n", "\t", "\r"]] });
+      char = this.nextChar({ skip: [",", ...WHITE_SPACES] });
     }
 
     return arr;
@@ -95,7 +98,7 @@ export default class JsonAssembler {
 
   public assembleObject = (): {} => {
     const obj: Record<string, any> = {};
-    let char = this.nextChar({ skip: [" ", "\n", "\t", "\r"] });
+    let char = this.nextChar({ skip: WHITE_SPACES });
 
     while (char && char != "}") {
       if (char == '"') {
@@ -104,7 +107,7 @@ export default class JsonAssembler {
         const value = this.assembleValue();
         obj[key] = value;
       }
-      char = this.nextChar({ skip: [" ", "\n", "\t", "\r"] });
+      char = this.nextChar({ skip: WHITE_SPACES });
     }
 
     return obj;
@@ -114,7 +117,7 @@ export default class JsonAssembler {
     let result = char;
     char = this.nextChar();
     while (char) {
-      if (char && [",", "]", "}"].includes(char)) {
+      if (char && CLOSURES.includes(char)) {
         this.json_string = char + this.json_string;
         break;
       }
