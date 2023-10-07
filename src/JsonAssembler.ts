@@ -1,131 +1,144 @@
-export default function jsonAssemble(json_string: string) {
-  const nextChar = (options?: {
-    until?: Array<string>;
-    skip?: Array<string>;
-  }) => {
-    if (json_string.length == 0) return null;
+export default class JsonAssembler {
+  private json_string: string;
+  constructor(json_string: string) {
+    this.json_string = json_string;
+  }
 
-    let index = 0;
-    let char: string | null = json_string.charAt(index++);
-    if (options?.until) {
-      while (char && !options.until.includes(char)) {
-        char = index < json_string.length ? json_string.charAt(index++) : null;
+  public assemble = () => {
+    const nextChar = (options?: {
+      until?: Array<string>;
+      skip?: Array<string>;
+    }) => {
+      if (this.json_string.length == 0) return null;
+
+      let index = 0;
+      let char: string | null = this.json_string.charAt(index++);
+      if (options?.until) {
+        while (char && !options.until.includes(char)) {
+          char =
+            index < this.json_string.length
+              ? this.json_string.charAt(index++)
+              : null;
+        }
+      } else if (options?.skip) {
+        while (char && options.skip.includes(char))
+          char =
+            index < this.json_string.length
+              ? this.json_string.charAt(index++)
+              : null;
       }
-    } else if (options?.skip) {
-      while (char && options.skip.includes(char))
-        char = index < json_string.length ? json_string.charAt(index++) : null;
-    }
 
-    json_string = json_string.slice(index, json_string.length);
-    return char;
-  };
+      this.json_string = this.json_string.slice(index, this.json_string.length);
+      return char;
+    };
 
-  const assembleValue = (): any => {
-    const char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
-    switch (char) {
-      case "}":
-        return;
-      case "]":
-        return;
-      case '"':
-        return assembleString();
-      case "{":
-        const obj = assembleObject();
-        return obj;
-      case "[":
-        return assembleArray();
-      default:
-        if (char) return assemblePrimitive(char);
-    }
-  };
-
-  const assembleString = (): string => {
-    let result = "";
-
-    let char = nextChar();
-    let prev_char = null;
-    while (char) {
-      if (char === '"' && prev_char !== "\\") {
-        break;
-      } else {
-        result += char;
+    const assembleValue = (): any => {
+      const char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
+      switch (char) {
+        case "}":
+          return;
+        case "]":
+          return;
+        case '"':
+          return assembleString();
+        case "{":
+          const obj = assembleObject();
+          return obj;
+        case "[":
+          return assembleArray();
+        default:
+          if (char) return assemblePrimitive(char);
       }
-      prev_char = char;
-      char = nextChar();
-    }
+    };
 
-    return replaceSpecialChars(result);
-  };
+    const assembleString = (): string => {
+      let result = "";
 
-  const replaceSpecialChars = (text: string) =>
-    text
-      .replace(/\\n/g, "\n")
-      .replace(/\\b/g, "\b")
-      .replace(/\\r/g, "\r")
-      .replace(/\\t/g, "\t")
-      .replace(/\\f/g, "\f")
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, "\\");
+      let char = nextChar();
+      let prev_char = null;
+      while (char) {
+        if (char === '"' && prev_char !== "\\") {
+          break;
+        } else {
+          result += char;
+        }
+        prev_char = char;
+        char = nextChar();
+      }
 
-  const assembleArray = (): any[] => {
-    const arr = [];
+      return replaceSpecialChars(result);
+    };
 
-    let char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
-    while (char && char != "]") {
-      json_string = char + json_string;
-      const value = assembleValue();
-      arr.push(value);
+    const replaceSpecialChars = (text: string) =>
+      text
+        .replace(/\\n/g, "\n")
+        .replace(/\\b/g, "\b")
+        .replace(/\\r/g, "\r")
+        .replace(/\\t/g, "\t")
+        .replace(/\\f/g, "\f")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\");
 
-      char = nextChar({ skip: [",", ...[" ", "\n", "\t", "\r"]] });
-    }
+    const assembleArray = (): any[] => {
+      const arr = [];
 
-    return arr;
-  };
-
-  const assembleObject = (): {} => {
-    const obj: Record<string, any> = {};
-    let char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
-
-    while (char && char != "}") {
-      if (char == '"') {
-        const key = assembleString();
-        nextChar({ until: [":"] });
+      let char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
+      while (char && char != "]") {
+        this.json_string = char + this.json_string;
         const value = assembleValue();
-        obj[key] = value;
-      }
-      char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
-    }
+        arr.push(value);
 
-    return obj;
-  };
-
-  const assemblePrimitive = (char: string | null): any => {
-    let result = char;
-    char = nextChar();
-    while (char) {
-      if (char && [",", "]", "}"].includes(char)) {
-        json_string = char + json_string;
-        break;
+        char = nextChar({ skip: [",", ...[" ", "\n", "\t", "\r"]] });
       }
 
-      result += char;
+      return arr;
+    };
+
+    const assembleObject = (): {} => {
+      const obj: Record<string, any> = {};
+      let char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
+
+      while (char && char != "}") {
+        if (char == '"') {
+          const key = assembleString();
+          nextChar({ until: [":"] });
+          const value = assembleValue();
+          obj[key] = value;
+        }
+        char = nextChar({ skip: [" ", "\n", "\t", "\r"] });
+      }
+
+      return obj;
+    };
+
+    const assemblePrimitive = (char: string | null): any => {
+      let result = char;
       char = nextChar();
-    }
+      while (char) {
+        if (char && [",", "]", "}"].includes(char)) {
+          this.json_string = char + this.json_string;
+          break;
+        }
 
-    if (!result) return result;
+        result += char;
+        char = nextChar();
+      }
 
-    const num = parseFloat(result);
-    if (!isNaN(num)) {
-      return num;
-    }
+      if (!result) return result;
 
-    if (result === "true") return true;
-    if (result === "false") return false;
-    if (result === "null") return null;
-    if (result === "undefined") return undefined;
+      const num = parseFloat(result);
+      if (!isNaN(num)) {
+        return num;
+      }
 
-    return result;
+      if (result === "true") return true;
+      if (result === "false") return false;
+      if (result === "null") return null;
+      if (result === "undefined") return undefined;
+
+      return result;
+    };
+
+    return assembleValue();
   };
-
-  return assembleValue();
 }
